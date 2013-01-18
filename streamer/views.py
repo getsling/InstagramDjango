@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from instagram.client import InstagramAPI
-from instagram.models import Subscription
-from instagram.models import InstagramImage
+from models import Subscription
+from models import InstagramImage
 from django.db.models.signals import post_save
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
@@ -18,7 +18,7 @@ def instagramPushListener( request, tag ):
 	Else we assume that we are receiving data from the source
 	'''
 	if request.method == "POST":
-		recent = result api.tag_recent_media(30, 0, tag_name)
+		recent = api.tag_recent_media(30, 0, tag)
 		
 		for media in recent:
 			media.images.thumbnail.url

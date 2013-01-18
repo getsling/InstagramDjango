@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from instagram import views
+from streamer import views
 
 admin.autodiscover()
 
