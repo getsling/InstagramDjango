@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from instagram.client import InstagramAPI
-from hashstream.models import HashStream
+from instagram.models import Subscription
+from instagram.models import InstagramImage
 from django.db.models.signals import post_save
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
@@ -57,5 +58,5 @@ def registerListener(**kwargs):
 	print "Register new callback subscription for {0}".format(instance.tag_name)
 	print kwargs
 
-#Register the listener for the databaseupdates for table HashStream
-post_save.connect(registerListener, sender=HashStream)
+#Register the listener for the databaseupdates for table Subscription
+post_save.connect(registerListener, sender=Subscription)
