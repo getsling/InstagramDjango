@@ -11,6 +11,7 @@ CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 logger= logging.getLogger(__name__)
+reactor = subscriptions.SubscriptionsReactor()
 
 # endpoint that receives the pushed requests from instagram
 def instagramPushListener( request, tag ):
@@ -21,6 +22,7 @@ def instagramPushListener( request, tag ):
 	Else we assume that we are receiving data from the source
 	'''
 	if request.method == "POST":
+		logger.debug("Update signal from instagram!")
 		x_hub_signature = request.header.get('X-Hub-Signature')
 		raw_response = request.body.read()
 		try:
@@ -28,6 +30,7 @@ def instagramPushListener( request, tag ):
 		except subscriptions.SubscriptionVerifyError:
 			logger.error("Error processing update")
 	else:
+		logger.debug("Token verify from instagram!")
 		return echoInstagramVerifyToken( request )
 
 	return HttpResponse("")
@@ -46,6 +49,7 @@ def instagramTagStream( request, tag ):
 	return HttpResponse(json.dumps(images), mimetype="application/json")
 
 def instagramStream( request, object_type, object_value=None, lat=None, lng=None, radius=None ):
+	logger.debug("getting images from instagramStream")
 	data = None
 
 	if object_type == "geography":
@@ -105,7 +109,7 @@ def registerListener(**kwargs):
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)
 
-reactor = subscriptions.SubscriptionsReactor()
+
 reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
 reactor.register_callback(subscriptions.SubscriptionType.TAG, processTagUpdate)
 reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processLocationUpdate)
