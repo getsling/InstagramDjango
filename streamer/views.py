@@ -55,19 +55,20 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 	return images
 
 def processUserUpdate( update ):
-	pass
+	processImages( api.user_recent_media( 30, 0, update.object_id ), update )
 
 def processTagUpdate( update ):
-	processImages( api.tag_recent_media( 30, 0, update.object_id ) )
+	processImages( api.tag_recent_media( 30, 0, update.object_id ), update )
 
 def processLocationUpdate( update ):
-	pass
+	processImages( api.location_recent_media( 30, 0, update.object_id ), update )
 
 def processGeographyUpdate( update ):
-	pass
+	processImages( api.geography_recent_media( 30, 0, update.object_id ), update )
 
-def processImages( data ):
-
+def processImages( data, subscribe_data ):
+	for image in data:
+		img = InstagramImage( subscriber=subscribe_data.id, location=data.location, lat=data.lat )
 
 def echoInstagramVerifyToken( request ):
 	'''
