@@ -23,10 +23,10 @@ class Subscription(models.Model):
 	object_value = models.CharField( max_length=512 )
 	
 	#The next 3 fields are only used for geography subscriptions
-	lat = models.DecimalField( max_digits=10, decimal_places=7, blank=True )
-	lng = models.DecimalField( max_digits=10, decimal_places=7, blank=True )
+	lat = models.DecimalField( max_digits=10, decimal_places=7, default=0, blank=True )
+	lng = models.DecimalField( max_digits=10, decimal_places=7, default=0, blank=True )
 	#Radius in meters
-	radius = models.IntegerField( blank=True )
+	radius = models.IntegerField( default=0, blank=True )
 
 class InstagramImage(models.Model):
 	'''
@@ -34,9 +34,16 @@ class InstagramImage(models.Model):
 
 	Subscriber that requested the item is ForeignKey
 	'''
+	#The requester
 	subscriber = models.ForeignKey( Subscription )
-	#The tag that was listened for
-	matched_tag = models.CharField( max_length=256 )
+
+	#Location information
+	location = models.CharField( max_length=512 )
+
+	#Geography information
+	lat = models.DecimalField( max_digits=10, decimal_places=7, default=0, blank=True )
+	lng = models.DecimalField( max_digits=10, decimal_places=7, default=0, blank=True )
+
 	#Json string containing a list of all tags
 	all_tags = models.CharField( max_length=512 )
 	#The raw caption
