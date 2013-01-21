@@ -1,4 +1,6 @@
 from django.db import models
+import json
+from django.core import serializers
 
 class Subscription(models.Model):
 	'''
@@ -34,6 +36,11 @@ class InstagramImage(models.Model):
 
 	Subscriber that requested the item is ForeignKey
 	'''
+
+	def toDict(self):
+		obj = {'lat':str(self.lat),'lng':str(self.lng),'all_tags':self.all_tags,'caption':self.caption,'thumbnail_url':self.thumbnail_url,'full_url':self.full_url}
+		return obj
+
 	#The requester
 	subscriber = models.ForeignKey( Subscription )
 

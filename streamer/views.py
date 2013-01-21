@@ -5,6 +5,8 @@ from models import Subscription
 from models import InstagramImage
 from django.db.models.signals import post_save
 import logging
+import json
+import pickle
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
@@ -46,14 +48,19 @@ def instagramTagStream( request, tag ):
 	
 	images = instagramStream( request, "tag", tag )
 
-	return HttpResponse(json.dumps(images), mimetype="application/json")
+	result = []
+	for img in images:
+		result.append( img.toDict() )
+
+	print result
+	return HttpResponse( json.dumps(result), mimetype="application/json")
 
 def instagramStream( request, object_type, object_value=None, lat=None, lng=None, radius=None ):
 	logger.debug("getting images from instagramStream")
-	data = None
+	data = None	
 
 	if object_type == "geography":
-		data = Subscription.objects.filter( object_type=object_type, lat=lat, lng=lng, radius=radius)
+		data = Subscription.objects.filter( object_type=object_type, lat=lat, lng=lng, radius=radius )
 	else:
 		data = Subscription.objects.filter( object_type=object_type, object_value=object_value )
 
@@ -62,24 +69,65 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 
 	return images
 
+def testApi( request ):
+	print "Testing"
+	media,next = api.tag_recent_media( 30, 0, "gangverk")
+
+	for image in media:
+		print("Creating image")
+		print image
+		print image.images['thumbnail'].url
+		db_image = InstagramImage()
+		db_image.thumbnail_url = image.images['thumbnail'].url
+		db_image.full_url = image.images['standard_resolution'].url
+		db_image.caption = image.caption
+		db_image.user = image.user.id
+		db_image.subscriber = Subscription.objects.get(pk=1)
+		db_image.all_tags = image.tags
+		if hasattr(image, "location"):
+			db_image.location = image.location.name
+			db_image.lat = image.location.lat
+			db_image.lng = image.location.lng
+		db_image.save()
+
+	return HttpResponse( db_image )
+
 def processUserUpdate( update ):
 	logger.debug("Handling User update")
-	processImages( api.user_recent_media( 30, 0, update.object_id ), update )
+	media, next = api.user_recent_media( 30, 0, update.object_id )
+	processImages( media, update )
 
 def processTagUpdate( update ):
 	logger.debug("Handling Tag update")
-	processImages( api.tag_recent_media( 30, 0, update.object_id ), update )
+	media, next = api.tag_recent_media( 30, 0, update.object_id )
+	processImages( media, update )
 
 def processLocationUpdate( update ):
-	processImages( api.location_recent_media( 30, 0, update.object_id ), update )
+	media, next = api.location_recent_media( 30, 0, update.object_id )
+	processImages( media, update )
 
 def processGeographyUpdate( update ):
-	processImages( api.geography_recent_media( 30, 0, update.object_id ), update )
+	media, next = api.geography_recent_media( 30, 0, update.object_id )
+	processImages( media, update )
 
 def processImages( data, subscribe_data ):
 	logger.debug("Processing images...")
-	for image in data:
-		img = InstagramImage( subscriber=subscribe_data.id, location=data.location, lat=data.lat )
+	print data
+	print subscribe_data
+	for image in media:
+		print("Creating image")
+		db_image = InstagramImage()
+		db_image.thumbnail_url = image.images['thumbnail'].url
+		db_image.full_url = image.images['standard_resolution'].url
+		db_image.caption = image.caption
+		db_image.user = image.user.id
+		db_image.subscriber = Subscription.objects.get(pk=1)
+		db_image.all_tags = image.tags
+		if hasattr(image, "location"):
+			db_image.location = image.location.name
+			db_image.lat = image.location.lat
+			db_image.lng = image.location.lng
+		db_image.save()
 
 def echoInstagramVerifyToken( request ):
 	'''
