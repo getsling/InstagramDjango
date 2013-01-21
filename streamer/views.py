@@ -21,10 +21,12 @@ def instagramPushListener( request, tag ):
 	Else we assume that we are receiving data from the source
 	'''
 	if request.method == "POST":
-		recent = api.tag_recent_media(30, 0, tag)
-		
-		for media in recent:
-			media.images.thumbnail.url
+		x_hub_signature = request.header.get('X-Hub-Signature')
+		raw_response = request.body.read()
+		try:
+			reactor.process(CLIENT_SECRET, raw_response, x_hub_signature)
+		except subscriptions.SubscriptionVerifyError:
+			logger.error("Error processing update")
 	else:
 		return echoInstagramVerifyToken( request )
 
