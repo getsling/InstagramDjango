@@ -4,11 +4,13 @@ from instagram import subscriptions
 from models import Subscription
 from models import InstagramImage
 from django.db.models.signals import post_save
+import logging
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+logger= logging.getLogger(__name__)
 
 # endpoint that receives the pushed requests from instagram
 def instagramPushListener( request, tag ):
@@ -55,9 +57,11 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 	return images
 
 def processUserUpdate( update ):
+	logger.debug("Handling User update")
 	processImages( api.user_recent_media( 30, 0, update.object_id ), update )
 
 def processTagUpdate( update ):
+	logger.debug("Handling Tag update")
 	processImages( api.tag_recent_media( 30, 0, update.object_id ), update )
 
 def processLocationUpdate( update ):
@@ -67,6 +71,7 @@ def processGeographyUpdate( update ):
 	processImages( api.geography_recent_media( 30, 0, update.object_id ), update )
 
 def processImages( data, subscribe_data ):
+	logger.debug("Processing images...")
 	for image in data:
 		img = InstagramImage( subscriber=subscribe_data.id, location=data.location, lat=data.lat )
 
@@ -93,8 +98,7 @@ def registerListener(**kwargs):
 	else:
 		api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
 
-	print "Register subscription for {0} with value: {1}".format(object_type, object_value)
-	print kwargs
+	logger.debug("Register subscription for {0} with value: {1}".format(object_type, object_value))
 
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)
