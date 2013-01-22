@@ -9,6 +9,7 @@ import traceback
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
+CALLBACK_HOST="http://insta.gangverk.is:8080"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 reactor = subscriptions.SubscriptionsReactor()
@@ -148,7 +149,7 @@ def registerListener(**kwargs):
 	instance = kwargs['instance']
 	object_type = instance.object_type
 	object_value = instance.object_value
-	callback_url = "http://insta.gangverk.is:8080/instagramPush/{0}".format(instance.id)
+	callback_url = "{0}/instagramPush/{1}".format(CALLBACK_HOST, instance.id)
 	
 	if object_type == "geography":
 		api.create_subscription( object=object_type, aspect='media', lat=instance.lat, lng=instance.lng, radius=instance.radius, callback_url=callback_url )
@@ -160,8 +161,8 @@ def registerListener(**kwargs):
 post_save.connect(registerListener, sender=Subscription)
 
 
-#reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
+reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
 reactor.register_callback(subscriptions.SubscriptionType.TAG, processTagUpdate)
-#reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processLocationUpdate)
-#reactor.register_callback(subscriptions.SubscriptionType.GEOGRAPHY, processGeographyUpdate)
+reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processLocationUpdate)
+reactor.register_callback(subscriptions.SubscriptionType.GEOGRAPHY, processGeographyUpdate)
 

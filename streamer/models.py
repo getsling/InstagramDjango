@@ -52,9 +52,9 @@ class InstagramImage(models.Model):
 	lng = models.DecimalField( max_digits=10, decimal_places=7, default=0, blank=True )
 
 	#Json string containing a list of all tags
-	all_tags = models.CharField( max_length=512 )
+	all_tags = models.CharField( max_length=512, default="", blank=True  )
 	#The raw caption
-	caption = models.CharField( max_length=512 )
+	caption = models.CharField( max_length=512, default="", blank=True  )
 	#Id of the instagram user
 	user = models.IntegerField()
 	#The url to the thumbnail
