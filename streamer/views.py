@@ -29,15 +29,8 @@ def instagramPushListener( request, tag ):
 
 		try:
 			reactor.process(CLIENT_SECRET, raw_response, x_hub_signature)
-		except subscriptions.SubscriptionVerifyError as e:
-			print "Exception1"
-			print e
-		except subscriptions.SubscriptionError as e2:
-			print "Exception2"
-			print e2
 		except Exception as e:
 			tb = traceback.format_exc()
-			print "Unexpected error:", sys.exc_info()[0]
 		finally:
 			print tb
 	else:
@@ -60,7 +53,6 @@ def instagramTagStream( request, tag ):
 	for img in images:
 		result.append( img.toDict() )
 
-	print result
 	return HttpResponse( json.dumps(result), mimetype="application/json")
 
 def instagramStream( request, object_type, object_value=None, lat=None, lng=None, radius=None ):
@@ -77,24 +69,22 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 	return images
 
 def testApi( request ):
-	print "Testing"
 	media,next = api.tag_recent_media( 30, 0, "gangverk")
 
 	for image in media:
-		print("Creating image")
-		print image
-		print image.images['thumbnail'].url
 		db_image = InstagramImage()
 		db_image.thumbnail_url = image.images['thumbnail'].url
 		db_image.full_url = image.images['standard_resolution'].url
 		db_image.caption = image.caption
+		if db_image.caption == None:
+			db_image.caption = ""
 		db_image.user = image.user.id
 		db_image.subscriber = Subscription.objects.get(pk=1)
 		db_image.all_tags = image.tags
 		if hasattr(image, "location"):
 			db_image.location = image.location.name
-			db_image.lat = image.location.lat
-			db_image.lng = image.location.lng
+			db_image.lat = image.location.point.latitude
+			db_image.lng = image.location.point.longitude
 		db_image.save()
 
 	return HttpResponse( db_image )
@@ -116,21 +106,20 @@ def processGeographyUpdate( update ):
 	processImages( media, update )
 
 def processImages( media, subscribe_data ):
-	print media
-	print subscribe_data
 	for image in media:
-		print("Creating image")
 		db_image = InstagramImage()
 		db_image.thumbnail_url = image.images['thumbnail'].url
 		db_image.full_url = image.images['standard_resolution'].url
 		db_image.caption = image.caption
+		if db_image.caption == None:
+			db_image.caption = ""
 		db_image.user = image.user.id
 		db_image.subscriber = Subscription.objects.get(pk=1)
 		db_image.all_tags = image.tags
 		if hasattr(image, "location"):
-			db_image.location = image.location['name']
-			db_image.lat = image.location['lat']
-			db_image.lng = image.location['lng']
+			db_image.location = image.location.name
+			db_image.lat = image.location.point.latitude
+			db_image.lng = image.location.point.longitude
 		db_image.save()
 
 def echoInstagramVerifyToken( request ):

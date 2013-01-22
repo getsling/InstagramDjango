@@ -54,7 +54,9 @@ class InstagramImage(models.Model):
 	#Json string containing a list of all tags
 	all_tags = models.CharField( max_length=512, default="", blank=True  )
 	#The raw caption
-	caption = models.CharField( max_length=512, default="", blank=True  )
+	caption = models.CharField( max_length=512, default="", blank=True )
+	#Comments on the image
+	comments = models.TextField( )
 	#Id of the instagram user
 	user = models.IntegerField()
 	#The url to the thumbnail
