@@ -1,3 +1,11 @@
-# auto discover host or overriden value for callback
+# auto discover host and use overriden value if available for callback url
 # renew subscriptions on restart of server
-# Attach the instagram subscription ids to our subscription objects
+# Get the current subscriptions on startup
+# Clean up when subscription is deleted
+# Clean up when a subscription is modified
+# Do nothing if a subscription exists for the subscription object
+
+Next version
+# Spam protection, block users that are reported
+# Reporting images that are not relevant to the stream
+# Realtime socket communications to the clients
