@@ -80,7 +80,8 @@ def testApi( request ):
 			db_image.caption = ""
 		db_image.user = image.user.id
 		db_image.subscriber = Subscription.objects.get(pk=1)
-		db_image.all_tags = image.tags
+		db_image.all_tags = json.dumps([i.name for i in image.tags])
+		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
 		if hasattr(image, "location"):
 			db_image.location = image.location.name
 			db_image.lat = image.location.point.latitude
@@ -115,7 +116,8 @@ def processImages( media, subscribe_data ):
 			db_image.caption = ""
 		db_image.user = image.user.id
 		db_image.subscriber = Subscription.objects.get(pk=1)
-		db_image.all_tags = image.tags
+		db_image.all_tags = json.dumps([i.name for i in image.tags])
+		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
 		if hasattr(image, "location"):
 			db_image.location = image.location.name
 			db_image.lat = image.location.point.latitude
