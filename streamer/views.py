@@ -6,6 +6,7 @@ from models import InstagramImage
 from django.db.models.signals import post_save
 import json
 import traceback
+import os
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
@@ -71,24 +72,10 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 def testApi( request ):
 	media,next = api.tag_recent_media( 30, 0, "gangverk")
 
-	for image in media:
-		db_image = InstagramImage()
-		db_image.thumbnail_url = image.images['thumbnail'].url
-		db_image.full_url = image.images['standard_resolution'].url
-		db_image.caption = image.caption
-		if db_image.caption == None:
-			db_image.caption = ""
-		db_image.user = image.user.id
-		db_image.subscriber = Subscription.objects.get(pk=1)
-		db_image.all_tags = json.dumps([i.name for i in image.tags])
-		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
-		if hasattr(image, "location"):
-			db_image.location = image.location.name
-			db_image.lat = image.location.point.latitude
-			db_image.lng = image.location.point.longitude
-		db_image.save()
+	subscribe_data = {"id":1}
+	processImages( media, subscribe_data )
 
-	return HttpResponse( db_image )
+	return HttpResponse( "OK" )
 
 def processUserUpdate( update ):
 	media, next = api.user_recent_media( 30, 0, update['object_id'])
@@ -111,11 +98,9 @@ def processImages( media, subscribe_data ):
 		db_image = InstagramImage()
 		db_image.thumbnail_url = image.images['thumbnail'].url
 		db_image.full_url = image.images['standard_resolution'].url
-		db_image.caption = image.caption.text
-		if db_image.caption == None:
-			db_image.caption = ""
+		db_image.caption = getattr(image.caption, "text", "")
 		db_image.user = image.user.id
-		db_image.subscriber = Subscription.objects.get(pk=1)
+		db_image.subscriber = Subscription.objects.get(pk=subscribe_data['id'])
 		db_image.all_tags = json.dumps([i.name for i in image.tags])
 		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
 		if hasattr(image, "location"):
@@ -150,7 +135,6 @@ def registerListener(**kwargs):
 
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)
-
 
 reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
 reactor.register_callback(subscriptions.SubscriptionType.TAG, processTagUpdate)
