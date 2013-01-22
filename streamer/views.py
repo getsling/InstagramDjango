@@ -7,6 +7,7 @@ from django.db.models.signals import post_save
 import json
 import traceback
 import os
+import sys
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
@@ -16,7 +17,7 @@ api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 reactor = subscriptions.SubscriptionsReactor()
 
 # endpoint that receives the pushed requests from instagram
-def instagramPushListener( request, tag ):
+def instagramPushListener( request, subscriber_id ):
 	'''
 	Handles the realtime API callbacks
 
@@ -24,6 +25,7 @@ def instagramPushListener( request, tag ):
 	Else we assume that we are receiving data from the source
 	'''
 	if request.method == "POST":
+		print >> sys.stderr, "Starting processing"
 		x_hub_signature = request.META.get('HTTP_X_HUB_SIGNATURE')
 		raw_response = request.body
 		tb = None
@@ -93,14 +95,14 @@ def processGeographyUpdate( update ):
 	media, next = api.geography_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
-def processImages( media, subscribe_data ):
+def processImages( media, data ):
 	for image in media:
 		db_image = InstagramImage()
 		db_image.thumbnail_url = image.images['thumbnail'].url
 		db_image.full_url = image.images['standard_resolution'].url
 		db_image.caption = getattr(image.caption, "text", "")
 		db_image.user = image.user.id
-		db_image.subscriber = Subscription.objects.get(pk=subscribe_data['id'])
+		db_image.subscriber = Subscription.objects.get( remote_id=data['subscription_id'] )
 		db_image.all_tags = json.dumps([i.name for i in image.tags])
 		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
 		if hasattr(image, "location"):
@@ -126,12 +128,14 @@ def registerListener(**kwargs):
 	object_type = instance.object_type
 	object_value = instance.object_value
 	callback_url = "{0}/instagramPush/{1}".format(CALLBACK_HOST, instance.id)
-	
+	res = None
 	if object_type == "geography":
-		api.create_subscription( object=object_type, aspect='media', lat=instance.lat, lng=instance.lng, radius=instance.radius, callback_url=callback_url )
+		res = api.create_subscription( object=object_type, aspect='media', lat=instance.lat, lng=instance.lng, radius=instance.radius, callback_url=callback_url )
 	else:
-		api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
+		res = api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
 
+	instance.remote_id = res['data']['id']
+	instance.save()
 
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)

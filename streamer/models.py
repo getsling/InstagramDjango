@@ -19,6 +19,8 @@ class Subscription(models.Model):
 	    ('geography', 'Geography')
 	)
 
+	remote_id = models.IntegerField( default=0, blank=True )
+
 	#Subscription type
 	object_type = models.CharField( max_length=12, choices=SUBSCRIPTION_TYPES )
 	#The value requested in the subscription
