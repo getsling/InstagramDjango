@@ -10,7 +10,7 @@ import os
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
-CALLBACK_HOST="http://insta.gangverk.is:8080"
+CALLBACK_HOST="http://insta.gangverk.is"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 reactor = subscriptions.SubscriptionsReactor()
@@ -32,8 +32,9 @@ def instagramPushListener( request, tag ):
 			reactor.process(CLIENT_SECRET, raw_response, x_hub_signature)
 		except Exception as e:
 			tb = traceback.format_exc()
-		finally:
-			print tb
+			handle1=open('stacktrace.txt','r+')
+			handle1.write(str(tb))
+			handle1.close();
 	else:
 		return echoInstagramVerifyToken( request )
 
