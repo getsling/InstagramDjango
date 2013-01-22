@@ -1,0 +1,3 @@
+# auto discover host or overriden value for callback
+# renew subscriptions on restart of server
+# Attach the instagram subscription ids to our subscription objects

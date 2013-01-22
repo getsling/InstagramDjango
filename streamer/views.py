@@ -4,15 +4,13 @@ from instagram import subscriptions
 from models import Subscription
 from models import InstagramImage
 from django.db.models.signals import post_save
-import logging
 import json
-import pickle
+import traceback
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-logger= logging.getLogger(__name__)
 reactor = subscriptions.SubscriptionsReactor()
 
 # endpoint that receives the pushed requests from instagram
@@ -24,15 +22,24 @@ def instagramPushListener( request, tag ):
 	Else we assume that we are receiving data from the source
 	'''
 	if request.method == "POST":
-		logger.debug("Update signal from instagram!")
-		x_hub_signature = request.header.get('X-Hub-Signature')
-		raw_response = request.body.read()
+		x_hub_signature = request.META.get('HTTP_X_HUB_SIGNATURE')
+		raw_response = request.body
+		tb = None
+
 		try:
 			reactor.process(CLIENT_SECRET, raw_response, x_hub_signature)
-		except subscriptions.SubscriptionVerifyError:
-			logger.error("Error processing update")
+		except subscriptions.SubscriptionVerifyError as e:
+			print "Exception1"
+			print e
+		except subscriptions.SubscriptionError as e2:
+			print "Exception2"
+			print e2
+		except Exception as e:
+			tb = traceback.format_exc()
+			print "Unexpected error:", sys.exc_info()[0]
+		finally:
+			print tb
 	else:
-		logger.debug("Token verify from instagram!")
 		return echoInstagramVerifyToken( request )
 
 	return HttpResponse("")
@@ -56,7 +63,6 @@ def instagramTagStream( request, tag ):
 	return HttpResponse( json.dumps(result), mimetype="application/json")
 
 def instagramStream( request, object_type, object_value=None, lat=None, lng=None, radius=None ):
-	logger.debug("getting images from instagramStream")
 	data = None	
 
 	if object_type == "geography":
@@ -93,26 +99,23 @@ def testApi( request ):
 	return HttpResponse( db_image )
 
 def processUserUpdate( update ):
-	logger.debug("Handling User update")
-	media, next = api.user_recent_media( 30, 0, update.object_id )
+	media, next = api.user_recent_media( 30, 0, update['object_id'])
 	processImages( media, update )
 
 def processTagUpdate( update ):
-	logger.debug("Handling Tag update")
-	media, next = api.tag_recent_media( 30, 0, update.object_id )
+	media, next = api.tag_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
 def processLocationUpdate( update ):
-	media, next = api.location_recent_media( 30, 0, update.object_id )
+	media, next = api.location_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
 def processGeographyUpdate( update ):
-	media, next = api.geography_recent_media( 30, 0, update.object_id )
+	media, next = api.geography_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
-def processImages( data, subscribe_data ):
-	logger.debug("Processing images...")
-	print data
+def processImages( media, subscribe_data ):
+	print media
 	print subscribe_data
 	for image in media:
 		print("Creating image")
@@ -124,9 +127,9 @@ def processImages( data, subscribe_data ):
 		db_image.subscriber = Subscription.objects.get(pk=1)
 		db_image.all_tags = image.tags
 		if hasattr(image, "location"):
-			db_image.location = image.location.name
-			db_image.lat = image.location.lat
-			db_image.lng = image.location.lng
+			db_image.location = image.location['name']
+			db_image.lat = image.location['lat']
+			db_image.lng = image.location['lng']
 		db_image.save()
 
 def echoInstagramVerifyToken( request ):
@@ -145,21 +148,20 @@ def registerListener(**kwargs):
 	instance = kwargs['instance']
 	object_type = instance.object_type
 	object_value = instance.object_value
-	callback_url = "http://insta.gangverk.is/instagramPush/{0}".format(instance.id)
+	callback_url = "http://insta.gangverk.is:8080/instagramPush/{0}".format(instance.id)
 	
 	if object_type == "geography":
 		api.create_subscription( object=object_type, aspect='media', lat=instance.lat, lng=instance.lng, radius=instance.radius, callback_url=callback_url )
 	else:
 		api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
 
-	logger.debug("Register subscription for {0} with value: {1}".format(object_type, object_value))
 
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)
 
 
-reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
+#reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
 reactor.register_callback(subscriptions.SubscriptionType.TAG, processTagUpdate)
-reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processLocationUpdate)
-reactor.register_callback(subscriptions.SubscriptionType.GEOGRAPHY, processGeographyUpdate)
+#reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processLocationUpdate)
+#reactor.register_callback(subscriptions.SubscriptionType.GEOGRAPHY, processGeographyUpdate)
 
