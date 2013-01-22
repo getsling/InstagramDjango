@@ -17,7 +17,7 @@ api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 reactor = subscriptions.SubscriptionsReactor()
 
 # endpoint that receives the pushed requests from instagram
-def instagramPushListener( request, subscriber_id ):
+def instagramPushListener( request, subscriber_django_id ):
 	'''
 	Handles the realtime API callbacks
 
@@ -134,8 +134,10 @@ def registerListener(**kwargs):
 	else:
 		res = api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
 
-	#instance.remote_id = res['data']['id']
-	#instance.save()
+	post_save.disconnect(registerListener, sender=Subscription)
+	instance.remote_id = res['data']['id']
+	instance.save()
+	post_save.connect(registerListener, sender=Subscription)
 
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)
