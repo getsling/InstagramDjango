@@ -11,7 +11,7 @@ import sys
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
-CALLBACK_HOST="http://insta.gangverk.is"
+CALLBACK_HOST="http://insta.gangverk.is:8080"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 reactor = subscriptions.SubscriptionsReactor()
@@ -134,8 +134,8 @@ def registerListener(**kwargs):
 	else:
 		res = api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
 
-	instance.remote_id = res['data']['id']
-	instance.save()
+	#instance.remote_id = res['data']['id']
+	#instance.save()
 
 #Register the listener for the databaseupdates for table Subscription
 post_save.connect(registerListener, sender=Subscription)
