@@ -31,7 +31,8 @@ def instagramPushListener( request, tag ):
 		try:
 			reactor.process(CLIENT_SECRET, raw_response, x_hub_signature)
 		except Exception as e:
-			tb = traceback.format_exc()
+			print >> sys.stderr, "Got error in reactor processing"
+			exc_type, exc_value, exc_traceback = sys.exc_info()
 			print >> sys.stderr, repr(traceback.format_exception(exc_type, exc_value,exc_traceback))
 	else:
 		return echoInstagramVerifyToken( request )
