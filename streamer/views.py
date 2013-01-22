@@ -111,7 +111,7 @@ def processImages( media, subscribe_data ):
 		db_image = InstagramImage()
 		db_image.thumbnail_url = image.images['thumbnail'].url
 		db_image.full_url = image.images['standard_resolution'].url
-		db_image.caption = image.caption
+		db_image.caption = image.caption.text
 		if db_image.caption == None:
 			db_image.caption = ""
 		db_image.user = image.user.id
