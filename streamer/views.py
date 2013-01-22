@@ -11,7 +11,7 @@ import sys
 
 CLIENT_ID="6fc75b2329dc4ef8a813ea4852da9a76"
 CLIENT_SECRET="a431a75619e84ff59ce21b09a12d93a9"
-CALLBACK_HOST="http://insta.gangverk.is:8080"
+CALLBACK_HOST="http://insta.gangverk.is"
 
 api = InstagramAPI(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 reactor = subscriptions.SubscriptionsReactor()
