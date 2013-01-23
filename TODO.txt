@@ -4,6 +4,7 @@
 # Clean up when subscription is deleted
 # Clean up when a subscription is modified
 # Do nothing if a subscription exists for the subscription object
+# Handle the ratelimit expiring
 
 Next version
 # Spam protection, block users that are reported

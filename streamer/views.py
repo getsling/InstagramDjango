@@ -25,11 +25,9 @@ def instagramPushListener( request, subscriber_django_id ):
 	Else we assume that we are receiving data from the source
 	'''
 	if request.method == "POST":
-		print >> sys.stderr, "Starting processing"
 		x_hub_signature = request.META.get('HTTP_X_HUB_SIGNATURE')
 		raw_response = request.body
 		tb = None
-
 		try:
 			reactor.process(CLIENT_SECRET, raw_response, x_hub_signature)
 		except Exception as e:
@@ -72,43 +70,56 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 	return images
 
 def testApi( request ):
-	media,next = api.tag_recent_media( 30, 0, "gangverk")
+	media,next = api.tag_recent_media( 30, getHighestImageId(2807743), "gangverk")
 
-	subscribe_data = {"id":1}
+	#The id is supplied from instagram
+	subscribe_data = {"subscription_id":2807743}
 	processImages( media, subscribe_data )
 
 	return HttpResponse( "OK" )
 
 def processUserUpdate( update ):
+	last_id = getHighestImageId( update['subscription_id'] )
 	media, next = api.user_recent_media( 30, 0, update['object_id'])
 	processImages( media, update )
 
 def processTagUpdate( update ):
+	last_id = getHighestImageId( update['subscription_id'] )
 	media, next = api.tag_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
 def processLocationUpdate( update ):
+	last_id = getHighestImageId( update['subscription_id'] )
 	media, next = api.location_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
 def processGeographyUpdate( update ):
+	last_id = getHighestImageId( update['subscription_id'] )
 	media, next = api.geography_recent_media( 30, 0, update['object_id'] )
 	processImages( media, update )
 
 def processImages( media, data ):
 	for image in media:
-		db_image = InstagramImage()
-		db_image.thumbnail_url = image.images['thumbnail'].url
-		db_image.full_url = image.images['standard_resolution'].url
+		image_query = InstagramImage.objects.filter(remote_id=image.id)
+		if len(image_query) == 1:
+			db_image = image_query[0]
+		else:
+			db_image = InstagramImage()
+			db_image.remote_id = image.id
+			db_image.thumbnail_url = image.images['thumbnail'].url
+			db_image.full_url = image.images['standard_resolution'].url
+			db_image.user = image.user.id
+			db_image.subscriber = Subscription.objects.get( remote_id=data['subscription_id'] )
+		
 		db_image.caption = getattr(image.caption, "text", "")
-		db_image.user = image.user.id
-		db_image.subscriber = Subscription.objects.get( remote_id=data['subscription_id'] )
 		db_image.all_tags = json.dumps([i.name for i in image.tags])
 		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
+
 		if hasattr(image, "location"):
 			db_image.location = image.location.name
 			db_image.lat = image.location.point.latitude
 			db_image.lng = image.location.point.longitude
+
 		db_image.save()
 
 def echoInstagramVerifyToken( request ):
