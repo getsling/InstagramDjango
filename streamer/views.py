@@ -4,6 +4,7 @@ from instagram import subscriptions
 from models import Subscription
 from models import InstagramImage
 from django.db.models.signals import post_save
+from django.db.models.signals import post_delete
 import json
 import traceback
 import os
@@ -78,27 +79,38 @@ def testApi( request ):
 
 	return HttpResponse( "OK" )
 
-def processUserUpdate( update ):
-	last_id = getHighestImageId( update['subscription_id'] )
-	media, next = api.user_recent_media( 30, 0, update['object_id'])
-	processImages( media, update )
+def processInstagramUpdate( update ):
+	key = update['object']
+	subscription_id = update['subscription_id']
+	
+	val = update.get('object_id')
+ 
+	if key == 'geography':
+		requestMediaByGeography( lat, lng, radius, subscription_id )
+	elif key == 'tag':
+		requestMediaByTag( val, subscription_id )
+	elif key == 'user':
+		requestMediaByUser( val, subscription_id )
+	elif key == 'location':
+		requestMediaByLocation( val, subscription_id )
 
-def processTagUpdate( update ):
-	last_id = getHighestImageId( update['subscription_id'] )
-	media, next = api.tag_recent_media( 30, 0, update['object_id'] )
-	processImages( media, update )
+def requestMediaByUser( user_id, subscription_id ):
+	media, next = api.user_recent_media( 30, 0, user_id)
+	processImages( media, subscription_id )
 
-def processLocationUpdate( update ):
-	last_id = getHighestImageId( update['subscription_id'] )
-	media, next = api.location_recent_media( 30, 0, update['object_id'] )
-	processImages( media, update )
+def requestMediaByTag( tag, subscription_id ):
+	media, next = api.tag_recent_media( 30, 0, tag)
+	processImages( media, subscription_id )
 
-def processGeographyUpdate( update ):
-	last_id = getHighestImageId( update['subscription_id'] )
-	media, next = api.geography_recent_media( 30, 0, update['object_id'] )
-	processImages( media, update )
+def requestMediaByLocation( location, subscription_id ):
+	media, next = api.location_recent_media( 30, 0, location )
+	processImages( media, subscription_id )
 
-def processImages( media, data ):
+def requestMediaByGeography( lat, lng, radius, subscription_id ):
+	media, next = api.geography_recent_media( 30, 0 )
+	processImages( media, subscription_id )
+
+def processImages( media, subscription_id ):
 	for image in media:
 		image_query = InstagramImage.objects.filter(remote_id=image.id)
 		if len(image_query) == 1:
@@ -109,7 +121,7 @@ def processImages( media, data ):
 			db_image.thumbnail_url = image.images['thumbnail'].url
 			db_image.full_url = image.images['standard_resolution'].url
 			db_image.user = image.user.id
-			db_image.subscriber = Subscription.objects.get( remote_id=data['subscription_id'] )
+			db_image.subscriber = Subscription.objects.get( remote_id= subscription_id )
 		
 		db_image.caption = getattr(image.caption, "text", "")
 		db_image.all_tags = json.dumps([i.name for i in image.tags])
@@ -131,7 +143,7 @@ def echoInstagramVerifyToken( request ):
 		echo = request.GET['hub.challenge']
 	return HttpResponse(echo)
 
-def registerListener(**kwargs):
+def registerInstagramListener(**kwargs):
 	'''
 	Trigger that is invoked when a hashtag is registered or updated using the model save method
 	'''
@@ -142,19 +154,42 @@ def registerListener(**kwargs):
 	res = None
 	if object_type == "geography":
 		res = api.create_subscription( object=object_type, aspect='media', lat=instance.lat, lng=instance.lng, radius=instance.radius, callback_url=callback_url )
+	elif object_type == "user":
+		print "Handling user"
+		user_res = api.user_search(q=object_value, count=1)
+		user_id = [ i.id for i in user_res if i.username == object_value][0]
+
+		object_value = user_id
+
+		res = api.create_subscription( object=object_type, object_id=user_id, aspect='media', callback_url=callback_url )
 	else:
 		res = api.create_subscription( object=object_type, object_id=object_value, aspect='media', callback_url=callback_url )
 
-	post_save.disconnect(registerListener, sender=Subscription)
+
+	#Disconnect the handler so we don't fall into endless loop
+	post_save.disconnect(registerInstagramListener, sender=Subscription)
 	instance.remote_id = res['data']['id']
 	instance.save()
-	post_save.connect(registerListener, sender=Subscription)
+	post_save.connect(registerInstagramListener, sender=Subscription)
+
+	#Populate the subscription with recent media
+	update = {'object':object_type,'object_id':object_value, 'subscription_id': instance.remote_id }
+	processInstagramUpdate(update)
+
+def removeInstagramListener(**kwargs):
+	'''
+	Trigger to cancel subscription with instagram when a subscription object is deleted
+	'''
+	instance = kwargs['instance']
+	api.delete_subscriptions(id=instance.id)
 
 #Register the listener for the databaseupdates for table Subscription
-post_save.connect(registerListener, sender=Subscription)
+post_save.connect(registerInstagramListener, sender=Subscription)
+post_delete.connect(removeInstagramListener, sender=Subscription)
 
-reactor.register_callback(subscriptions.SubscriptionType.USER, processUserUpdate)
-reactor.register_callback(subscriptions.SubscriptionType.TAG, processTagUpdate)
-reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processLocationUpdate)
-reactor.register_callback(subscriptions.SubscriptionType.GEOGRAPHY, processGeographyUpdate)
+#Register the handlers for updates in the Instagram API
+reactor.register_callback(subscriptions.SubscriptionType.USER, processInstagramUpdate)
+reactor.register_callback(subscriptions.SubscriptionType.TAG, processInstagramUpdate)
+reactor.register_callback(subscriptions.SubscriptionType.LOCATION, processInstagramUpdate)
+reactor.register_callback(subscriptions.SubscriptionType.GEOGRAPHY, processInstagramUpdate)
 

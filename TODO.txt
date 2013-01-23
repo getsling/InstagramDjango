@@ -4,7 +4,10 @@
 # Clean up when subscription is deleted
 # Clean up when a subscription is modified
 # Do nothing if a subscription exists for the subscription object
-# Handle the ratelimit expiring
+# Handle the ratelimit expiring - limit the requests to the api to 1 per second
+# Image with two tags matching 2 subscribers will fail
+# Geography not yet implemented
+# User not working
 
 Next version
 # Spam protection, block users that are reported
