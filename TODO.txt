@@ -8,6 +8,7 @@
 # Image with two tags matching 2 subscribers will fail
 # Geography not yet implemented
 # User not working
+# Check on update if tag is still there
 
 Next version
 # Spam protection, block users that are reported
