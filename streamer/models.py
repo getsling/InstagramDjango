@@ -58,7 +58,8 @@ class InstagramImage(models.Model):
 			'location':self.location,
 			'user':self.user,
 			'username':self.username,
-			'usericon':self.usericon
+			'usericon':self.usericon,
+			'likescount':self.likescount
 		}
 		return obj
 
@@ -84,6 +85,8 @@ class InstagramImage(models.Model):
 	user = models.IntegerField()
 	username = models.CharField( max_length=512, default="", blank=True )
 	usericon = models.CharField( max_length=512, default="", blank=True )
+
+	likescount = models.IntegerField()
 
 	#The url to the thumbnail
 	thumbnail_url = models.CharField( max_length=512 )

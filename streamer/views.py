@@ -124,6 +124,7 @@ def processImages( media, subscription_id ):
 			db_image.username = image.user.username
 			db_image.usericon = image.user.profile_picture
 			db_image.subscriber = Subscription.objects.get( remote_id= subscription_id )
+			db_image.likescount = image.likes.count
 		
 		db_image.caption = getattr(image.caption, "text", "")
 		db_image.all_tags = json.dumps([i.name for i in image.tags])
