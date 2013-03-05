@@ -47,7 +47,17 @@ class InstagramImage(models.Model):
 	'''
 
 	def toDict(self):
-		obj = {'lat':str(self.lat),'lng':str(self.lng),'all_tags':self.all_tags,'caption':self.caption,'thumbnail_url':self.thumbnail_url,'full_url':self.full_url}
+		obj = {
+			'lat':str(self.lat),
+			'lng':str(self.lng),
+			'all_tags':self.all_tags,
+			'caption':self.caption,
+			'thumbnail_url':self.thumbnail_url,
+			'full_url':self.full_url,
+			'comments':self.comments,
+			'location':self.location,
+			'user':self.user
+		}
 		return obj
 
 	remote_id = models.CharField( max_length=256, unique=True)
