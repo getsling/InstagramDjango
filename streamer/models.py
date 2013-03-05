@@ -54,7 +54,7 @@ class InstagramImage(models.Model):
 			'caption':self.caption,
 			'thumbnail_url':self.thumbnail_url,
 			'full_url':self.full_url,
-			'comments':self.comments,
+			'comments': json.loads(self.comments),
 			'location':self.location,
 			'user':self.user,
 			'username':self.username,
