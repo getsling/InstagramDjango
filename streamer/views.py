@@ -71,7 +71,7 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 	return images
 
 def testApi( request ):
-	media,next = api.tag_recent_media( 30, getHighestImageId(2807743), "gangverk")
+	media,next = api.tag_recent_media( 30, 0, "gangverk")
 
 	#The id is supplied from instagram
 	subscribe_data = {"subscription_id":2807743}
@@ -121,6 +121,8 @@ def processImages( media, subscription_id ):
 			db_image.thumbnail_url = image.images['thumbnail'].url
 			db_image.full_url = image.images['standard_resolution'].url
 			db_image.user = image.user.id
+			db_image.username = image.user.username
+			db_image.usericon = image.user.profile_picture
 			db_image.subscriber = Subscription.objects.get( remote_id= subscription_id )
 		
 		db_image.caption = getattr(image.caption, "text", "")
