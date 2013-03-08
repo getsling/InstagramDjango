@@ -3,6 +3,7 @@ from instagram.client import InstagramAPI
 from instagram import subscriptions
 from models import Subscription
 from models import InstagramImage
+from models import InstagramEndpoint
 from django.db.models.signals import post_save
 from django.db.models.signals import post_delete
 import json
@@ -39,6 +40,27 @@ def instagramPushListener( request, subscriber_django_id ):
 		return echoInstagramVerifyToken( request )
 
 	return HttpResponse("")
+
+# Business end of this view, faces the client
+def instagramEndpoint( request, endpoint_name ):
+	'''
+	Streams the given tag
+	'''
+	#Params:
+	#Paging index
+	#No of results per response, max 30
+	
+	data = InstagramEndpoint.objects.filter( endpoint_url=endpoint_name )
+	result = []
+	
+	if len(data) > 0:
+		endpoint = data[0]
+		images = InstagramImage.objects.filter(subscriber__in=endpoint.subscribers.all()).order_by('-created_time')
+
+		for img in images:
+			result.append( img.toDict() )
+
+	return HttpResponse( json.dumps(result), mimetype="application/json")
 
 # Business end of this view, faces the client
 def instagramTagStream( request, tag ):

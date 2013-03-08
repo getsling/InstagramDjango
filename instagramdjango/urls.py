@@ -9,5 +9,6 @@ urlpatterns = patterns('',
 	url(r'^admin/', include(admin.site.urls)),
 	url(r'^instagramPush/(.*)$', views.instagramPushListener),
 	url(r'^testApi/', views.testApi),
-	url(r'^tag/(\w+)$', views.instagramTagStream)
+	url(r'^tag/(\w+)$', views.instagramEndpoint),
+	url(r'^testtag/(\w+)$', views.instagramTagStream)
 )

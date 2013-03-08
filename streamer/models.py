@@ -3,6 +3,8 @@ import json
 from django.core import serializers
 from django.contrib import admin
 
+
+
 class Subscription(models.Model):
 	'''
 	Supports all subscriptions for Instagram
@@ -38,6 +40,10 @@ class Subscription(models.Model):
 
 class SubscriptionAdmin(admin.ModelAdmin):
 	exclude = ['remote_id']
+
+class InstagramEndpoint(models.Model):
+	endpoint_url = models.CharField( max_length=512, verbose_name="The url used for this endpoint")
+	subscribers = models.ManyToManyField(Subscription, verbose_name="linked subscriptions")
 
 class InstagramImage(models.Model):
 	'''
