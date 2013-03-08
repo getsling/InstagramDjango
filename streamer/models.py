@@ -86,6 +86,8 @@ class InstagramImage(models.Model):
 	username = models.CharField( max_length=512, default="", blank=True )
 	usericon = models.CharField( max_length=512, default="", blank=True )
 
+	created_time = models.DateField()
+
 	likescount = models.IntegerField()
 
 	#The url to the thumbnail

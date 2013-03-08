@@ -66,7 +66,7 @@ def instagramStream( request, object_type, object_value=None, lat=None, lng=None
 		data = Subscription.objects.filter( object_type=object_type, object_value=object_value )
 
 	data.get();
-	images = InstagramImage.objects.filter(subscriber=data)
+	images = InstagramImage.objects.filter(subscriber=data).order_by('-created_time')
 
 	return images
 
@@ -125,7 +125,7 @@ def processImages( media, subscription_id ):
 			db_image.usericon = image.user.profile_picture
 			db_image.subscriber = Subscription.objects.get( remote_id= subscription_id )
 			db_image.likescount = len(image.likes)
-		
+			db_image.created_time = image.created_time
 		db_image.caption = getattr(image.caption, "text", "")
 		db_image.all_tags = json.dumps([i.name for i in image.tags])
 		db_image.comments = json.dumps([{"user":i.user.id, "text":i.text} for i in image.comments])
